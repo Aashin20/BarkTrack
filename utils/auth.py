@@ -4,8 +4,8 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-uri=os.getenv("URI")
 
+uri=os.getenv("URI")
 client = MongoClient(uri, server_api=ServerApi('1'))
 try:
     client.admin.command('ping')
