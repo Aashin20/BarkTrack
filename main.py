@@ -1,10 +1,12 @@
-from fastapi import FastAPI,HTTPException
+from fastapi import FastAPI,HTTPException,Depends, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from contextlib import asynccontextmanager
 from pydantic import BaseModel,EmailStr
-from utils.auth import register as reg
+from utils.auth import register as reg,login as lg
 import uvicorn
 from utils.db import Database
+from utils.token import create_access_token,verify_token,create_refresh_token
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -16,6 +18,7 @@ async def lifespan(app: FastAPI):
         Database.client.close()
 
 app=FastAPI(lifespan=lifespan)
+oauth2 = OAuth2PasswordBearer(tokenUrl="/login")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,9 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class UserModel(BaseModel):
     name : str
+    email : EmailStr
+    password : str
+
+class LoginModel(BaseModel):
     email : EmailStr
     password : str
 
@@ -38,6 +44,14 @@ async def register(user:UserModel):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+@app.post("/login")
+def login(user:LoginModel,response: Response):
+    user = lg(user.email, user.password)
+    access_token = create_access_token({"user_id": user["id"], "name": user["name"], "email": user["email"]})
+    refresh_token = create_refresh_token(user["id"])
+    response.set_cookie("refresh_token", refresh_token, httponly=True)
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
