@@ -65,7 +65,7 @@ def refresh_token(request: Request, response: Response):
 @app.post("/logout")
 def logout(response: Response):
     response.delete_cookie("refresh_token")
-    return {"message": "Logged out"}
+    return {"message": "Successfully Logged out"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
