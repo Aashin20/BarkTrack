@@ -62,7 +62,10 @@ def refresh_token(request: Request, response: Response):
     new_access_token = create_access_token({"user_id": payload["user_id"]})
     return {"access_token": new_access_token, "token_type": "bearer"}
 
-
+@app.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("refresh_token")
+    return {"message": "Logged out"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
