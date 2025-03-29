@@ -4,8 +4,12 @@ import os
 from dotenv import load_dotenv
 import bcrypt
 from .db import Database
+from fastapi import HTTPException,status
 
 load_dotenv()
+SECRET_KEY=os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def register(name,email,password):
     users = Database.get_db().users
@@ -28,6 +32,19 @@ def register(name,email,password):
         return {"message":"Registered Successfully"}
     
 
-    
+def login(email,password):
+    users=Database.get_db().users
+    user=users.find_one({"email":email})
+    if user:
+        passw=user.get('password')
+        result=bcrypt.checkpw(password.encode('utf-8'), passw.encode('utf-8')) 
+        if result:
+            return {"id": str(user["_id"]), "name": user["name"], "email": user["email"]}
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User Not Registered")
+
+
 
 
