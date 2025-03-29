@@ -14,12 +14,28 @@ def register(name,email,password):
         print("Connected to MongoDB!")
     except Exception as e:
         print(e)
+    db=client.auth_db
+    users=db.users
 
-    bytes=password.encode('utf-8')
-    salt=bcrypt.gensalt()
-    hash=bcrypt.hashpw(bytes,salt)
+    exists = users.find_one({"email":email})
+    if exists:
+        return "User already exists"
+    
+    else:
+        bytes=password.encode('utf-8')
+        salt=bcrypt.gensalt()
+        hash=bcrypt.hashpw(bytes,salt).decode('utf-8')
+
+        info={
+            "name": name,
+            "email":email,
+            "password": hash
+        }
+        
+        users.insert_one(info)  
+        return "Registered Successfully"
+    
 
     
- 
 
 
