@@ -67,5 +67,8 @@ def logout(response: Response):
     response.delete_cookie("refresh_token")
     return {"message": "Successfully Logged out"}
 
+@app.get("/health")
+def health():
+    return {"healthy"}
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
