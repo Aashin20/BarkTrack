@@ -5,12 +5,16 @@ from dotenv import load_dotenv
 import bcrypt
 from .db import Database
 from fastapi import HTTPException,status
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import HTTPException,Depends,status
+from .token import verify_token
 
 load_dotenv()
 
 SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+oauth2 = OAuth2PasswordBearer(tokenUrl="/login")
 
 def register(name,email,password):
     users = Database.get_db().users
@@ -53,4 +57,13 @@ def login(email,password):
 
 
 
-
+async def get_current_user(token: str = Depends(oauth2)):
+    try:
+        payload = verify_token(token, "access")
+        return payload
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

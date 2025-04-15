@@ -1,17 +1,32 @@
-from fastapi import FastAPI,HTTPException,Depends, Response, Request,status
+from fastapi import FastAPI,HTTPException,Depends, Response, Request,status,File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from contextlib import asynccontextmanager
 from pydantic import BaseModel,EmailStr
-from utils.auth import register as reg,login as lg
+from utils.auth import register as reg,login as lg,get_current_user
 import uvicorn
 from utils.db import Database
 from utils.token import create_access_token,verify_token,create_refresh_token
+from tensorflow import keras
+import tensorflow as tf
+import numpy as np
+from PIL import Image
+import io
+from utils.breed import preprocess_image,create_model,get_prediction
+
+
+model = None 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Connecting to MongoDB.....")
     Database.initialize()
+
+    print("Loading ML model...")
+    global model
+    model = create_model()
+
+
     yield
     print("Shutting down MongoDB....")
     if Database.client:
@@ -67,8 +82,35 @@ def logout(response: Response):
     response.delete_cookie("refresh_token")
     return {"message": "Successfully Logged out"}
 
-@app.get("/health")
-def health():
-    return {"healthy"}
+
+@app.post("/predict/breed")
+async def predict(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=400,
+                detail="File must be an image"
+            )
+            
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
+        
+        processed_image = preprocess_image(image)
+        prediction = get_prediction(model, processed_image)
+        
+        return {
+            "prediction": prediction,
+            "user": current_user["name"]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
