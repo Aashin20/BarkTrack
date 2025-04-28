@@ -4,6 +4,7 @@ python-jose
 numpy
 Pillow
 pydantic
+pydantic[email]
 pymongo
 python-dotenv
 python_bcrypt
