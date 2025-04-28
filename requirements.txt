@@ -12,3 +12,4 @@ Requests
 tensorflow
 tensorflow_intel
 uvicorn
+python-multipart
