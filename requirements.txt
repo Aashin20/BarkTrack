@@ -1,6 +1,6 @@
 fastapi
 groq
-jose
+python-jose
 numpy
 Pillow
 pydantic
