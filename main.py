@@ -6,15 +6,16 @@ from pydantic import BaseModel,EmailStr
 from utils.auth import register as reg,login as lg,get_current_user
 import uvicorn
 from utils.db import Database
-from utils.token import create_access_token,verify_token,create_refresh_token
+from utils.authtoken import create_access_token,verify_token,create_refresh_token
 from tensorflow import keras
 import tensorflow as tf
 import numpy as np
 from PIL import Image
 import io
 from utils.breed import preprocess_image,create_model,get_prediction
-
-
+from utils.weight import weight_identification
+import base64
+import os
 model = None 
 
 @asynccontextmanager
@@ -112,5 +113,39 @@ async def predict(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+@app.post("/predict/weight")
+async def predict_weight(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=400,
+                detail="Please upload a valid image file."
+            )
+        
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        
+        if image.mode in ("RGBA", "P"):
+            image = image.convert("RGB")
+        
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG")
+        
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        
+        weight_info = weight_identification(img_base64)
+        
+        return {
+            "weight": weight_info["weight"],
+            "body_composition_score": weight_info["body_composition_score"],
+            "user": current_user["name"]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
