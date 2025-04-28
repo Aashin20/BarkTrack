@@ -7,7 +7,6 @@ pydantic
 pydantic[email]
 pymongo
 python-dotenv
-python-bcrypt
 Requests
 tensorflow
 tensorflow_intel
