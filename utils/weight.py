@@ -11,7 +11,7 @@ def weight_identification(img: str) :
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Estimate the weight(in kg) and body composition score(out of 10) of the dog in the image. ONLY OUTPUT THE APPROXIMATE WEIGHT AND BODY COMPOSITION SCORE AND NOTHING ELSE.DO NOT RETURN RANGE VALUES. THE OUTPUT SHOULD BE IN THE FOLLOWING FORMAT: {'weight': <weight>, 'body_composition_score': <score>}."},
+                    {"type": "text", "text": "Estimate the weight(in kg) and body condition score(out of 10) of the dog in the image. ONLY OUTPUT THE APPROXIMATE WEIGHT AND BODY CONDITION SCORE AND NOTHING ELSE.DO NOT RETURN RANGE VALUES. THE OUTPUT SHOULD BE IN THE FOLLOWING FORMAT: {'weight': <weight>, 'body_condition_score': <score>}."},
                     {
                         "type": "image_url",
                         "image_url": {
