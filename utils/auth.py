@@ -7,7 +7,7 @@ from .db import Database
 from fastapi import HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import HTTPException,Depends,status
-from .token import verify_token
+from .authtoken import verify_token
 
 load_dotenv()
 
