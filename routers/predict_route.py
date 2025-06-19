@@ -38,3 +38,31 @@ async def predict_breed(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/panting")
+async def analyze(file: UploadFile = File(...),current_user: dict = Depends(get_current_user),):
+    temp_video_path = None
+    try:
+       
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
+            temp_video_path = temp_file.name
+            content = await file.read()
+            temp_file.write(content)
+        
+        print(f"[INFO] Received video file: {file.filename}")
+        print(f"[INFO] Saved video to: {temp_video_path}")
+        
+     
+        result = analyze_video(temp_video_path)
+        print(f"[INFO] Analysis result: {result}")
+        
+        return {"result": result}
+    
+    except Exception as e:
+        print(f"[ERROR] Exception occurred during processing: {str(e)}")
+        return {"error": f"Processing failed: {str(e)}"}
+    
+    finally:
+      
+        if temp_video_path:
+            safe_delete_file(temp_video_path)
+    
