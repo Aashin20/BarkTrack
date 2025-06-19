@@ -57,3 +57,11 @@ async def update_doctor(doctor_id: str, doctor_update: DoctorUpdate):
         updated = collection.find_one({"_id": ObjectId(doctor_id)})
         return doctor_helper(updated)
     raise HTTPException(status_code=404, detail="Doctor not found or no changes")
+
+@router.delete("/{doctor_id}", response_model=dict)
+async def delete_doctor(doctor_id: str):
+    collection = get_doctor_collection()
+    result = collection.delete_one({"_id": ObjectId(doctor_id)})
+    if result.deleted_count == 1:
+        return {"message": "Doctor deleted"}
+    raise HTTPException(status_code=404, detail="Doctor not found")
