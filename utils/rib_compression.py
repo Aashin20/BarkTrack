@@ -29,3 +29,11 @@ rib_transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
+# --- Predict Frame Confidence & Label ---
+def predict_rib_frame(model, frame):
+    image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    image = rib_transform(image).unsqueeze(0).to(DEVICE)
+    with torch.no_grad():
+        output = torch.sigmoid(model(image)).item()
+    return output, 1 if output > THRESHOLD else 0
+
