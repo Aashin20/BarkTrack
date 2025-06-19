@@ -24,4 +24,6 @@ async def get_details(current_user: dict = Depends(get_current_user)):
 async def add_dog(dog: dict = Body(...),current_user: dict = Depends(get_current_user)):
     return add_dog_to_user(current_user["user_id"], dog)
 
-
+@router.get("/dog/view")
+async def get_my_dogs(current_user: dict = Depends(get_current_user)):
+    return get_user_dogs(current_user["user_id"])
