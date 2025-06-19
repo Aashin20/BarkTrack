@@ -1,5 +1,3 @@
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
 import os
 from dotenv import load_dotenv
 import bcrypt
@@ -31,7 +29,8 @@ def register(name,email,password):
         info={
             "name": name,
             "email":email,
-            "password": hash
+            "password": hash,
+            "dogs": []
         }
         
         users.insert_one(info)  
