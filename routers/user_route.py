@@ -20,3 +20,8 @@ class FeedbackModel(BaseModel):
 async def get_details(current_user: dict = Depends(get_current_user)):
     return get_user_details(current_user["user_id"])
 
+@router.post("/dog/add")
+async def add_dog(dog: dict = Body(...),current_user: dict = Depends(get_current_user)):
+    return add_dog_to_user(current_user["user_id"], dog)
+
+
