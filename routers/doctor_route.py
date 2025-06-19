@@ -48,3 +48,12 @@ async def get_doctor(doctor_id: str):
         raise HTTPException(status_code=404, detail="Doctor not found")
     return doctor_helper(doc)
 
+@router.put("/{doctor_id}", response_model=dict)
+async def update_doctor(doctor_id: str, doctor_update: DoctorUpdate):
+    collection = get_doctor_collection()
+    update_data = {k: v for k, v in doctor_update.dict().items() if v is not None}
+    result = collection.update_one({"_id": ObjectId(doctor_id)}, {"$set": update_data})
+    if result.modified_count == 1:
+        updated = collection.find_one({"_id": ObjectId(doctor_id)})
+        return doctor_helper(updated)
+    raise HTTPException(status_code=404, detail="Doctor not found or no changes")
