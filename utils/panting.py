@@ -28,3 +28,43 @@ transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.ToTensor()
 ])
+
+# --- Predict Frame Confidence & Label ---
+def predict_frame(model, frame):
+    image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    image = transform(image).unsqueeze(0).to(DEVICE)
+    with torch.no_grad():
+        output = torch.sigmoid(model(image)).item()
+    return output, 1 if output > THRESHOLD else 0
+
+# --- Analyze Video ---
+def analyze_video(video_path):
+    model = load_model()
+    cap = None
+    
+    try:
+        cap = cv2.VideoCapture(video_path)
+
+        if not cap.isOpened():
+            return "Error: Could not open video."
+
+        predictions = []
+        frame_idx = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            if frame_idx % FRAME_INTERVAL == 0:
+                _, pred = predict_frame(model, frame)
+                predictions.append(pred)
+            frame_idx += 1
+
+        # --- Check Overall Panting ---
+        panting_detected = any(predictions)
+        return "The dog is panting." if panting_detected else "The dog is not panting."
+    
+    finally:
+        if cap is not None:
+            cap.release()
+        gc.collect()
