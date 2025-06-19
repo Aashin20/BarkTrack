@@ -40,3 +40,7 @@ def refresh_token(request: Request, response: Response):
     new_access_token = create_access_token({"user_id": payload["user_id"]})
     return {"access_token": new_access_token, "token_type": "bearer"}
 
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("refresh_token")
+    return {"message": "Successfully Logged out"}
