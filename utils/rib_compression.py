@@ -37,3 +37,27 @@ def predict_rib_frame(model, frame):
         output = torch.sigmoid(model(image)).item()
     return output, 1 if output > THRESHOLD else 0
 
+# --- Safe File Deletion ---
+def safe_delete_file(file_path, max_attempts=5, delay=0.5):
+    """
+    Safely delete a file with retry logic for Windows file locking issues
+    """
+    for attempt in range(max_attempts):
+        try:
+            if os.path.exists(file_path):
+                os.unlink(file_path)
+                print(f"[INFO] Deleted temp file: {file_path}")
+            return True
+        except PermissionError:
+            if attempt < max_attempts - 1:
+                print(f"[WARNING] Attempt {attempt + 1} failed to delete {file_path}, retrying...")
+                time.sleep(delay)
+                gc.collect()  
+            else:
+                print(f"[ERROR] Could not delete {file_path} after {max_attempts} attempts")
+                return False
+        except Exception as e:
+            print(f"[ERROR] Unexpected error deleting {file_path}: {str(e)}")
+            return False
+    return False
+
