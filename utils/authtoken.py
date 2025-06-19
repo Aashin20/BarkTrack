@@ -2,7 +2,6 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel
-from uuid import uuid4
 import os
 from dotenv import load_dotenv
 from fastapi import HTTPException, status
