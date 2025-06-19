@@ -66,3 +66,39 @@ async def analyze(file: UploadFile = File(...),current_user: dict = Depends(get_
         if temp_video_path:
             safe_delete_file(temp_video_path)
     
+@router.post("/rib")
+async def analyze(file: UploadFile = File(...),current_user: dict = Depends(get_current_user)):
+    temp_video_path = None
+    
+    try:
+        print(f"[INFO] Received video file: {file.filename}")
+
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+            temp_video_path = temp_video.name
+            content = await file.read()
+            temp_video.write(content)
+        
+        print(f"[INFO] Saved video to: {temp_video_path}")
+
+  
+        result = rib_analyze_video(temp_video_path)
+        print(f"[INFO] Analysis result: {result}")
+
+        return {"result": result}
+
+    except Exception as e:
+        print("[ERROR] Exception occurred during processing")
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal server error",
+                "details": str(e)
+            }
+        )
+    
+    finally:
+    
+        if temp_video_path:
+            safe_delete_file(temp_video_path)
