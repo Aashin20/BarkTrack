@@ -1,40 +1,29 @@
-from fastapi import FastAPI,HTTPException,Depends, Response, Request,status,File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from pydantic import BaseModel,EmailStr
-from utils.auth import register as reg,login as lg,get_current_user
-import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 from utils.db import Database
-from utils.authtoken import create_access_token,verify_token,create_refresh_token
-from tensorflow import keras
-import tensorflow as tf
-import numpy as np
-from PIL import Image
-import io
-from utils.breed import preprocess_image,create_model,get_prediction
-from utils.weight import weight_identification
-import base64
-import os
-model = None 
+from utils.breed import create_model
+from routers import auth_route, user_route, predict_route,doctor_route
+from utils.rib_compression import load_rib_model
+from utils.panting import load_model
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Connecting to MongoDB.....")
     Database.initialize()
-
     print("Loading ML model...")
-    global model
-    model = create_model()
-
-
+    app.state.breed_model = create_model()
+    app.state.rib_model = load_rib_model()
+    app.state.panting_model = load_model()
     yield
     print("Shutting down MongoDB....")
     if Database.client:
         Database.client.close()
 
-app=FastAPI(lifespan=lifespan)
-oauth2 = OAuth2PasswordBearer(tokenUrl="/login")
+app = FastAPI(lifespan=lifespan)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,109 +32,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class UserModel(BaseModel):
-    name : str
-    email : EmailStr
-    password : str
 
-class LoginModel(BaseModel):
-    email : EmailStr
-    password : str
-
-@app.post("/register")
-async def register(user:UserModel):
-    try:
-        result=reg(name=user.name,email=user.email,password=user.password)
-        return result["message"]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/login")
-def login(user:LoginModel,response: Response):
-    user = lg(user.email, user.password)
-    access_token = create_access_token({"user_id": user["id"], "name": user["name"], "email": user["email"]})
-    refresh_token = create_refresh_token(user["id"])
-    response.set_cookie("refresh_token", refresh_token, httponly=True)
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.post("/refresh")
-def refresh_token(request: Request, response: Response):
-    refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
-    
-    payload = verify_token(refresh_token, "refresh")
-    new_access_token = create_access_token({"user_id": payload["user_id"]})
-    return {"access_token": new_access_token, "token_type": "bearer"}
-
-@app.post("/logout")
-def logout(response: Response):
-    response.delete_cookie("refresh_token")
-    return {"message": "Successfully Logged out"}
-
-
-@app.post("/predict/breed")
-async def predict(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
-):
-    try:
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=400,
-                detail="File must be an image"
-            )
-            
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
-        
-        if image.mode == 'RGBA':
-            image = image.convert('RGB')
-        
-        processed_image = preprocess_image(image)
-        prediction = get_prediction(model, processed_image)
-        
-        return {
-            "prediction": prediction,
-            "user": current_user["name"]
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/predict/weight")
-async def predict_weight(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
-):
-    try:
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=400,
-                detail="Please upload a valid image file."
-            )
-        
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
-        
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-        
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG")
-        
-        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-        
-        weight_info = weight_identification(img_base64)
-        
-        return {
-            "weight": weight_info["weight"],
-            "body_composition_score": weight_info["body_composition_score"],
-            "user": current_user["name"]
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+app.include_router(auth_route.router, prefix="/auth",tags=["auth"])
+app.include_router(user_route.router, prefix="/user",tags=["user"])
+app.include_router(predict_route.router, prefix="/predict", tags=["predict"])
+app.include_router(doctor_route.router,prefix="/doctor", tags=["doctor"])
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
