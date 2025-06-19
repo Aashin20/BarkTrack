@@ -13,3 +13,6 @@ tensorflow_intel
 uvicorn
 python-multipart
 bcrypt
+torch
+opencv-python
+torchvision
