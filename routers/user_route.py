@@ -27,3 +27,24 @@ async def add_dog(dog: dict = Body(...),current_user: dict = Depends(get_current
 @router.get("/dog/view")
 async def get_my_dogs(current_user: dict = Depends(get_current_user)):
     return get_user_dogs(current_user["user_id"])
+
+@router.post("/feedback")
+async def submit_feedback(
+    feedback: FeedbackModel,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        db = Database.get_db()
+        feedbacks = db.feedbacks
+
+        feedback_data = feedback.dict()
+        feedback_data["user_id"] = current_user["user_id"]
+
+        result = feedbacks.insert_one(feedback_data)
+        return {
+            "message": "Feedback submitted successfully",
+            "id": str(result.inserted_id)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit feedback: {e}")
