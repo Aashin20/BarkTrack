@@ -13,3 +13,11 @@ class UserModel(BaseModel):
 class LoginModel(BaseModel):
     email: EmailStr
     password: str
+
+@router.post("/register")
+async def register(user: UserModel):
+    try:
+        result = reg(name=user.name, email=user.email, password=user.password)
+        return result["message"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
