@@ -68,3 +68,22 @@ def analyze_video(video_path):
         if cap is not None:
             cap.release()
         gc.collect()
+
+# --- Safe File Deletion ---
+def safe_delete_file(file_path, max_attempts=5, delay=0.5):
+    """
+    Safely delete a file with retry logic for Windows file locking issues
+    """
+    for attempt in range(max_attempts):
+        try:
+            if os.path.exists(file_path):
+                os.unlink(file_path)
+            return True
+        except PermissionError:
+            if attempt < max_attempts - 1:
+                time.sleep(delay)
+                gc.collect()
+            else:
+                print(f"Warning: Could not delete {file_path} after {max_attempts} attempts")
+                return False
+    return False
