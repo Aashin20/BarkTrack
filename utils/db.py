@@ -25,3 +25,8 @@ class Database:
         if not cls.client:
             cls.initialize()
         return cls.db
+    
+
+def get_doctor_collection():
+    db = Database.get_db()
+    return db["doctors"]
