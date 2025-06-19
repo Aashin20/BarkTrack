@@ -39,3 +39,12 @@ async def list_doctors():
     for doc in collection.find():
         doctors.append(doctor_helper(doc))
     return doctors
+
+@router.get("/{doctor_id}", response_model=dict)
+async def get_doctor(doctor_id: str):
+    collection = get_doctor_collection()
+    doc = collection.find_one({"_id": ObjectId(doctor_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    return doctor_helper(doc)
+
