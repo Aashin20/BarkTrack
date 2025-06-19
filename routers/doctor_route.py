@@ -32,3 +32,10 @@ async def create_doctor(doctor: DoctorCreate):
     new_doc = collection.find_one({"_id": result.inserted_id})
     return {"message": "Doctor created", "doctor": doctor_helper(new_doc)}
 
+@router.get("/", response_model=List[dict])
+async def list_doctors():
+    collection = get_doctor_collection()
+    doctors = []
+    for doc in collection.find():
+        doctors.append(doctor_helper(doc))
+    return doctors
