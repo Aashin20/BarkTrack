@@ -61,3 +61,38 @@ def safe_delete_file(file_path, max_attempts=5, delay=0.5):
             return False
     return False
 
+# --- Analyze Video ---
+def rib_analyze_video(video_path):
+    model = load_rib_model()
+    cap = None
+    
+    try:
+        cap = cv2.VideoCapture(video_path)
+
+        if not cap.isOpened():
+            return "Error: Could not open video."
+
+        predictions = []
+        frame_idx = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            if frame_idx % FRAME_INTERVAL == 0:
+                _, pred = predict_rib_frame(model, frame)
+                predictions.append(pred)
+            frame_idx += 1
+
+        # --- Check Overall Rib Compression ---
+        rib_compression_detected = any(predictions)
+        return "The dog is having rib compression." if rib_compression_detected else "The dog is not having rib compression."
+    
+    except Exception as e:
+        print(f"[ERROR] Error during video analysis: {str(e)}")
+        return f"Error during analysis: {str(e)}"
+    
+    finally:
+        if cap is not None:
+            cap.release()
+        gc.collect()
