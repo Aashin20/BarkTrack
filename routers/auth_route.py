@@ -21,3 +21,12 @@ async def register(user: UserModel):
         return result["message"]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/login")
+def login(user: LoginModel, response: Response):
+    user = lg(user.email, user.password)
+    access_token = create_access_token({"user_id": user["id"], "name": user["name"], "email": user["email"]})
+    refresh_token = create_refresh_token(user["id"])
+    response.set_cookie("refresh_token", refresh_token, httponly=True)
+    return {"access_token": access_token, "token_type": "bearer"}
+
