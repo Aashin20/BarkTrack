@@ -1,9 +1,13 @@
 from bson import ObjectId
 from .db import Database
 from fastapi import HTTPException
+import base64
 
 def add_dog_to_user(user_id: str, dog_data: dict):
     users = Database.get_db().users
+
+    if "image" in dog_data and isinstance(dog_data["image"], bytes):
+        dog_data["image"] = base64.b64encode(dog_data["image"]).decode("utf-8")
 
     result = users.update_one(
         {"_id": ObjectId(user_id)},
