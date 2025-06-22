@@ -11,3 +11,5 @@ torch
 torchvision
 opencv-python
 pydantic
+pydantic[email]
+python-multipart
